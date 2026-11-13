@@ -11,6 +11,7 @@ Credentials are read from the environment rather than hard-coded:
 Usage:
   export FEDEX_API_KEY=...  FEDEX_API_SECRET=...
   python fedex_tracking.py 123456789012
+  python fedex_tracking.py --raw 123456789012   # full FedEx response
 """
 
 from __future__ import annotations
@@ -177,11 +178,14 @@ def track_shipment(
 if __name__ == "__main__":
     import json
 
-    if len(sys.argv) != 2:
-        sys.exit(f"usage: {sys.argv[0]} <tracking-number>")
+    args = sys.argv[1:]
+    raw = "--raw" in args
+    args = [a for a in args if a != "--raw"]
+    if len(args) != 1:
+        sys.exit(f"usage: {sys.argv[0]} [--raw] <tracking-number>")
     try:
-        info = track_shipment(sys.argv[1])
+        info = track_shipment(args[0])
     except FedExError as e:
         sys.exit(f"error: {e}")
-    info.pop("raw")
-    print(json.dumps(info, indent=2))
+    # --raw prints FedEx's complete response; default prints the summary.
+    print(json.dumps(info["raw"] if raw else {k: v for k, v in info.items() if k != "raw"}, indent=2))
